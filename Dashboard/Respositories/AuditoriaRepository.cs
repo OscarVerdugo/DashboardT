@@ -11,20 +11,21 @@ using System.Threading.Tasks;
 
 namespace Dashboard.Respositories
 {
-    public class Calendarizaciones
+    public class AuditoriaRepository : IAuditoriaRepository
     {
         private readonly IHubContext<ChartHub> _hub;
         private readonly IConfiguration _config;
         private readonly string _connectionString;
-        public Calendarizaciones(IConfiguration config,IHubContext<ChartHub> hub)
+        
+        public AuditoriaRepository(IConfiguration config, IHubContext<ChartHub> hub)
         {
             _hub = hub;
             _config = config;
             _connectionString = _config.GetConnectionString("SIFA_PRUEBAS");
         }
-        public void Get()
+        public AuditoriasPorEstatusModel ObtenerResultados()
         {
-            List<CalendarizacionModel> lst = null;
+            AuditoriasPorEstatusModel res = null;
             SqlDependency dep = null;
 
             using (SqlConnection con = new SqlConnection(_connectionString))
@@ -32,35 +33,51 @@ namespace Dashboard.Respositories
                 try
                 {
                     con.Open();
-                    SqlCommand cmd = new SqlCommand("SP_Test_Obtener_Calendarizaciones", con);
+                    SqlCommand cmd = new SqlCommand("SP_D_Auditorias", con);
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Notification = null;
-                    
+
                     //sqlDependency
-                    dep = new SqlDependency();
+                    dep = new SqlDependency(cmd);
                     dep.OnChange += DetectarCambios;
                     SqlDependency.Start(_connectionString);
 
                     SqlDataReader dr = cmd.ExecuteReader();
-                    if (dr.HasRows)
-                    {
-                        lst = new List<CalendarizacionModel>();
-                        // =(
-                    }
+                    //if (dr.Read())
+                    //{
+                    //    res = new AuditoriasPorEstatusModel();
+
+                    //    res.autorizadas = dr.IsDBNull(dr.GetOrdinal("Autorizadas")) ? 0 : dr.GetInt32(dr.GetOrdinal("Autorizadas"));
+                    //    res.propuestas = dr.IsDBNull(dr.GetOrdinal("Propuestas")) ? 0 : dr.GetInt32(dr.GetOrdinal("Propuestas"));
+                    //    res.rechazadas = dr.IsDBNull(dr.GetOrdinal("Rechazadas")) ? 0 : dr.GetInt32(dr.GetOrdinal("Rechazadas"));
+                    //}
+
+                    return res;
                 }
                 catch (Exception ex)
                 {
                     throw new Exception(ex.Message);
-                    throw;
                 }
             }
         }
 
         private void DetectarCambios(object sender, SqlNotificationEventArgs e)
         {
-            //al detectar cambios se notifica por socket 
+            if (e.Type == SqlNotificationType.Change)
+            {
+                _hub.Clients.All.SendAsync("auditorias");
+            }
+            ObtenerResultados();
+        }
+
+        public IEnumerable<AuditoriasPorEstatusModel> Get()
+        {
             throw new NotImplementedException();
         }
-    }
 
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+        }
+    }
 }

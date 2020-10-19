@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dashboard.Contracts;
 using Dashboard.HubConfig;
+using Dashboard.Respositories;
+using Dashboard.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -26,6 +29,7 @@ namespace Dashboard
                 .AddJsonFile("appsettings.json")
                 .AddEnvironmentVariables();
             _configuration = builder.Build();
+            //_configuration = configuration;
         }
 
         //This method gets called by the runtime. Use this method to add services to the container.
@@ -33,6 +37,11 @@ namespace Dashboard
         {
 
             services.AddSingleton(_configuration);
+
+            services.AddScoped<IAuditoriaRepository,AuditoriaRepository>();
+            services.AddScoped<IAuditoriaService, AuditoriaService>();
+
+
 
             services.AddCors(options => {
                 options.AddPolicy("CorsPolicy", builder => builder
