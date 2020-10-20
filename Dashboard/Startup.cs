@@ -1,19 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Dashboard.Contracts;
+
 using Dashboard.HubConfig;
-using Dashboard.Respositories;
-using Dashboard.Services;
+using Dashboard.Subscribers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using SignalRCore.Web;
 
 namespace Dashboard
 {
@@ -38,9 +31,8 @@ namespace Dashboard
 
             services.AddSingleton(_configuration);
 
-            services.AddScoped<IAuditoriaRepository,AuditoriaRepository>();
-            services.AddScoped<IAuditoriaService, AuditoriaService>();
-
+            //dependency injection
+            services.AddSingleton<ProductSubscriber, ProductSubscriber>();
 
 
             services.AddCors(options => {
@@ -76,7 +68,10 @@ namespace Dashboard
             {
                 endpoints.MapControllers();
                 endpoints.MapHub<ChartHub>("/chart");
+                endpoints.MapHub<ProductHub>("/products");
             });
+
+            app.UseSqlTableDependency<ProductSubscriber>(_configuration.GetConnectionString("local"));
         }
     }
 }
